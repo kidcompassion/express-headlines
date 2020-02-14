@@ -1,0 +1,26 @@
+ const pubs = [
+    {
+        "name":"Edmonton Journal",
+        "url": "http://edmontonjournal.com",
+        "rssUrl": "http://edmontonjournal.com/feed",
+        "logoUrl":"https://via.placeholder.com/150"
+    },
+    {
+        "name":"Edmonton Sun",
+        "url": "http://edmontonsun.com",
+        "rssUrl": "http://edmontonsun.com/feed/",
+        "logoUrl":"https://via.placeholder.com/150"
+    },
+    {
+        "name":"CTV Edmonton",
+        "url": "https://edmonton.ctvnews.ca",
+        "rssUrl": "https://edmonton.ctvnews.ca/rss/ctv-news-edmonton-1.822347",
+        "logoUrl":"https://via.placeholder.com/150"
+    },
+    {
+        "name":"CBC Edmonton",
+        "url": "https://www.cbc.ca/news/canada/edmonton",
+        "rssUrl": "http://www.cbc.ca/cmlink/rss-canada-edmonton",
+        "logoUrl":"https://via.placeholder.com/150"
+    }
+]

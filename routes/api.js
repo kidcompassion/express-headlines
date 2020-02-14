@@ -25,57 +25,39 @@ const asyncHandler = (callback)=>{
 
 
 
-/**
- * Escape Helper
- * @param {*} linkInfo 
- * @param {*} pubId 
- */
-
- function escapeXml(unsafe) {
-    return unsafe.replace(/[<>&'"]/g, function (c) {
-        switch (c) {
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '&': return '&amp;';
-            case '\'': return '&apos;';
-            case '"': return '&quot;';
-        }
-    });
-}
-
 
 /**
- * XML Parsing middleware
+ * xmlParse - Parses incoming XML
  * 
+ * @param {*} linkInfo // url for publication, via publications
+ * @param {*} pubId // id of publication
  */
-
 
 const xmlParse = (linkInfo, pubId)=>{
     let allStories = [];
 
-    console.log(pubId);
+    // Get the results of the rss-parser
     let feed =  new Promise ((resolve, reject)=>{
         resolve( parser.parseURL(linkInfo));
     });
     
     feed.then((result)=>{
-
-
+        // Loop through the array of all returned stories
         result.items.forEach(item => {
-         //   console.log('item', item);
+            // Push the values into an object formatted for our uses
             story = {
                 title: item.title,
                 url: item.link,
                 publicationDate: item.pubDate,
                 author: item.creator,
-                imgUrl: null,
+                imgUrl: null, // TODO: Image comes in differently in various feeds, account for it
                 excerpt: item.contentSnippet,
-                publicationId: pubId,
-                categoryId: 1
+                publicationId: pubId, // The corresponding publication, so we can sort by pub
+                categoryId: 1 //TODO: set up the cats
             }
 
-             allStories.push(story);
-            // Story.create(story);   
+            // Push all formatted stories into an array
+            allStories.push(story);
          });
     }).then(()=>{
         allStories.map((story)=>{
@@ -107,90 +89,92 @@ router.get('/', function(req, res, next) {
 
 
 
-
+/**
+ * Get list of publications in ASC order
+ * 
+ */
 router.get('/publications', asyncHandler(async function(req, res, next) {
-    const pubs = await Publication.findAll();
+    const pubs = await Publication.findAll({
+        order:[
+            [ 'name', 'ASC']
+        ]
+    });
     res.status(200).json(pubs);
 }));
 
 
 
-
+/**
+ *  Get all stories, in reverse chronological order
+ */
 router.get('/stories', asyncHandler(async function(req, res, next) {
-
-    try{
-        const stories = await Story.findAll();
-   
+    const stories = await Story.findAll({
+        order: [
+            ['publicationDate', 'DESC']
+        ]
+    });
     res.status(200).json(stories);
-    }catch(err){
-        console.log(err);
-    }
 }));
-
-
-router.get('/stories/:id', asyncHandler(async function(req, res, next){
-    const publicationSlug = req.params.id;
-    
-    try{
-        const selectedPub = new Promise ((resolve, reject)=>{
-            resolve( 
-                Publication.findAll({
-                    where:{
-                        slug: publicationSlug
-                    },
-                    raw:true
-                }));
-        });
-
-        selectedPub.then((result)=>{
-            const pubId = result[0]['id'];
-            return pubId
-        }).then( (result)=>{
-            //console.log(result);
-            const stories =  new Promise ((resolve, reject)=>{
-                resolve(
-                    Story.findAll({
-                        where: {
-                            publicationId: result
-                        },
-                        include:{
-                            model: Publication
-                        },
-                        raw: true
-                    })
-                )
-            });          
-            stories.then((result)=>{
-                
-                res.status(200).json(result);
-            })
-        });
-
-       
-    }catch(err){
-        console.log(err);
-    }
-
-
-}));
-
-
 
 
 /**
- * Publications
+ * Get stories by publication slug
+ */
+router.get('/stories/:id', asyncHandler(async function(req, res, next){
+    const publicationSlug = req.params.id;
+
+    const selectedPub = new Promise ((resolve, reject)=>{
+        resolve( 
+            Publication.findAll({
+                where:{
+                    slug: publicationSlug
+                },
+                raw:true
+            })
+        );
+    });
+
+    selectedPub.then((result)=>{
+        const pubId = result[0]['id'];
+        return pubId
+    }).then( (result)=>{
+        //console.log(result);
+        const stories =  new Promise ((resolve, reject)=>{
+            resolve(
+                Story.findAll({
+                    where: {
+                        publicationId: result
+                    },
+                    include:{
+                        model: Publication
+                    },
+                    raw: true
+                })
+            )
+        }
+    ); 
+
+    stories.then((result)=>{        
+            res.status(200).json(result);
+        })
+    });
+}));
+
+
+
+/*********** POST  */
+
+/**
+ * Add a publication
  */
 
 router.post('/publications', (req, res, next)=>{
-
-
     newPub = req.body;
 
     const generateSlug = (name)=>{
         return name.replace(/\s/g , "-").toLowerCase();
     }
 
-  //  console.log(req);
     const createPublication =  Publication.create({
                                         name: newPub.name,
                                         url: newPub.url,
@@ -203,18 +187,16 @@ router.post('/publications', (req, res, next)=>{
 });
 
 
-
-
-
+/**
+ * Scrape for all available stories
+ */
 router.post('/stories', asyncHandler( async function(req, res, next){
 
     const pubs = await Publication.findAll({
         raw: true,
         attributes: ["id", "rssUrl"],
     });
-console.log('pubs', pubs);
     pubs.map((pub, index)=>{
-       
          xmlParse(pub.rssUrl, pub.id);
     });
    
@@ -223,15 +205,17 @@ console.log('pubs', pubs);
 
 
 
-router.post('/categories', function(req, res, next){
-    const createPublication =  Category.create({
-        name:'Category Two'
-    });
+/************DELETE ********** */
+
+
+router.delete('/stories', asyncHandler( async function(req, res, next){
+
+    //const allStories = await Story.findAll();
    
-    res.json({
-        'hello': 'hello'
-    });
-});
+    await Story.destroy({where:{}});
+    
+    res.status(204).end();
+}));
 
 
 

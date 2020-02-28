@@ -9,22 +9,25 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       title: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        unique: true
       },
       url: {
         type: Sequelize.STRING
       },
       publicationDate: {
-        type: Sequelize.STRING
+        type: Sequelize.DATE
       },
       excerpt: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
+      },
+      content: {
+        type: Sequelize.TEXT
       },
       author: {
         type: Sequelize.STRING
       },
       imgUrl: {
-        allowNull: true,
         type: Sequelize.STRING
       },
       createdAt: {
@@ -40,7 +43,6 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       categoryId:{
-        allowNull: true,
         type: Sequelize.INTEGER
       }
     });

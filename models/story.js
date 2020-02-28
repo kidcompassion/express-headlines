@@ -14,18 +14,23 @@ module.exports = ( sequelize ) =>{
         title: {
             type:Sequelize.STRING,
             nullable: false,
+            unique: true
         },
         url: {
             type:Sequelize.STRING,
             nullable: true,
         },
         publicationDate: {
-            type:Sequelize.STRING,
+            type:Sequelize.DATE,
             nullable: true,
         },
         excerpt: {
             type:Sequelize.TEXT,
             nullable: true,
+        },
+        content: {
+          type:Sequelize.TEXT,
+          nullable: true,
         },
         author: {
             type:Sequelize.STRING,
@@ -33,28 +38,37 @@ module.exports = ( sequelize ) =>{
         },
         imgUrl: {
           type: Sequelize.STRING,
-          allowNull: true
+          nullable: true
         }, 
         publicationId: {
             type: Sequelize.INTEGER,
-            allowNull: true
+            nullable: true
         },
        
     }, {sequelize});
 
     
     const Publication = sequelize.define('Publication');
-    const Category = sequelize.define('Category');
+    
+    
 
     Story.associate = function(models) {
-		Story.belongsTo(Publication, {
+      Story.belongsTo(Publication, {
+        // Set the foreign key to be the userid, referencing the id field in the User model
+        foreignKey: {
+          fieldName: 'PublicationId',
+          allowNull: false,
+        },
+      });
+      }
+
+  
+  /*
+    Story.associate = function(models) {
+		Story.hasOne(Bookmark, {
 			// Set the foreign key to be the userid, referencing the id field in the User model
-			foreignKey: {
-				fieldName: 'PublicationId',
-				allowNull: false,
-			},
 		});
-    }
+    }*/
   /*  
     Story.associate = function(models) {
 		Story.belongsTo(Category, {

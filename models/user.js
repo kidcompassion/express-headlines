@@ -16,6 +16,7 @@ module.exports = (sequelize) => {
 		  emailAddress: {
 			type: Sequelize.STRING,
 			allowNull: false,
+			unique: true,
 			validate:{
 				notEmpty: true,
 				isEmail:true
@@ -29,6 +30,7 @@ module.exports = (sequelize) => {
 			}
 			
 		  },
+		  
 	},{sequelize});
 
 	return User;

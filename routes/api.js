@@ -1,9 +1,19 @@
 const express = require('express');
 const router = express.Router();
 let Parser = require('rss-parser');
-let parser = new Parser();
+let parser = new Parser({
+    customFields: {
+        item: [
+          ['media:content', 'assocMedia'],
+        ]
+      }
+  });
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+var auth = require('basic-auth');
 
-const { User, Story, Publication, Category } = require('../models');
+const { User, Story, Publication, Bookmark } = require('../models');
+const { Op } = require("sequelize");
 
 
 /**
@@ -23,8 +33,61 @@ const asyncHandler = (callback)=>{
     }
 }
 
+/**
+ * Authentication Function
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ */
 
+const authenticateUser = async (req, res, next) => {
+    // https://teamtreehouse.com/library/rest-api-authentication-with-express
+    //Get auth headers
+    const credentials = auth(req);
 
+    //Set message for various errors
+    let message = null;
+    
+    if(credentials){
+        let userPassword = '';
+        // Get the user based on auth header email
+        const userLookup = await User.findAll({
+                                    where: {
+                                        emailAddress: credentials.name
+                                    }
+                                });
+
+        if (userLookup.length>0){           
+            // Get hashed password and set it to var for comparing
+            userLookup.map((user)=> {
+                userPassword = user.password;
+            });
+                                
+            // Compare password to one in DB
+            const passwordMatch = bcrypt.compareSync(credentials.pass, userPassword);
+            console.log(JSON.stringify(req.headers));
+
+            // If correct password, set current user property
+            if(passwordMatch){
+                req.currentUser = userLookup;
+            } else {
+                message = 'Password does not match';
+            }
+        } else {
+            message = 'No such user';
+        }
+    } else {
+        message = 'No headers';
+    }
+    if(message){
+        console.warn(message);
+        res.status(401).json({ message: 'Access Denied' });
+    }else {
+        next();
+    }
+
+    
+  };
 
 /**
  * xmlParse - Parses incoming XML
@@ -39,21 +102,35 @@ const xmlParse = (linkInfo, pubId)=>{
     // Get the results of the rss-parser
     let feed =  new Promise ((resolve, reject)=>{
         resolve( parser.parseURL(linkInfo));
+        
     });
     
     feed.then((result)=>{
+        
         // Loop through the array of all returned stories
         result.items.forEach(item => {
+            
+            let formattedDate = new Date(item.pubDate); // format the dates so they can be ordered accurately
+            let formattedImg = 'https://via.placeholder.com/150';
+        
+            if(typeof(item.assocMedia) !== 'undefined'){
+                formattedImg = item.assocMedia.$.url;
+            } 
+            if(typeof(item.enclosure) !== 'undefined'){
+                formattedImg = item.enclosure.url;
+            } 
+
             // Push the values into an object formatted for our uses
             story = {
                 title: item.title,
                 url: item.link,
-                publicationDate: item.pubDate,
+                publicationDate: formattedDate.toString(),
                 author: item.creator,
-                imgUrl: null, // TODO: Image comes in differently in various feeds, account for it
+                imgUrl:formattedImg,
                 excerpt: item.contentSnippet,
                 publicationId: pubId, // The corresponding publication, so we can sort by pub
-                categoryId: 1 //TODO: set up the cats
+                categoryId: 123, //TODO: set up the cats
+                content: item.content
             }
 
             // Push all formatted stories into an array
@@ -64,29 +141,19 @@ const xmlParse = (linkInfo, pubId)=>{
             Story.create(story);
         });
     }).catch((err)=>{
-        console.log(err);
+        console.log(err.response);
     });
 
-
-   
-    
+    // NEEDS TO TRIGGER RE_RENDER OF COMPONENT
 }
 
 
-
-
-
-
-/* GET home page. */
+/**
+ * Redirect to courses
+ */
 router.get('/', function(req, res, next) {
-
-    
-    res.json({
-        message: 'Welcome to the REST API project!',
-    });
+    res.redirect('/courses');
 });
-
-
 
 
 /**
@@ -108,12 +175,59 @@ router.get('/publications', asyncHandler(async function(req, res, next) {
  *  Get all stories, in reverse chronological order
  */
 router.get('/stories', asyncHandler(async function(req, res, next) {
+    
     const stories = await Story.findAll({
+        attributes: ["id", "title", "url", "publicationDate", "excerpt", "author", "content", "imgUrl", "publicationId"],
         order: [
             ['publicationDate', 'DESC']
-        ]
+        ],
+        include:{
+            model: Publication
+        },
     });
     res.status(200).json(stories);
+}));
+
+
+/**
+ * List bookmarks for a given user based on their user id #
+ */
+
+router.get('/:id/bookmarks',asyncHandler(async function(req, res, next){
+    try{
+        // Get userId via URL, and get all their bookmarks
+        const bookmarks = await Bookmark.findAll({
+            where: {
+                userId: {
+                    [Op.eq]: req.params.id
+                }
+            },
+            raw:true
+        });
+
+        // Push the storyIDs into an array
+        let userBookmarks = [];
+        bookmarks.map((story, index)=>{
+            userBookmarks.push(story.storyId);
+        });
+
+        // Query for all storyids in the array
+        const bookmarkedStories = await Story.findAll({
+            where: {
+                id: {
+                  [Op.in]: userBookmarks
+                }
+              },
+              include:{
+                model: Publication
+            }
+        });
+
+        res.status(200).json(bookmarkedStories);
+
+    }catch(err){
+        console.log(err);
+    }
 }));
 
 
@@ -121,8 +235,10 @@ router.get('/stories', asyncHandler(async function(req, res, next) {
  * Get stories by publication slug
  */
 router.get('/stories/:id', asyncHandler(async function(req, res, next){
+    // Grab publication slug
     const publicationSlug = req.params.id;
 
+    //get publication with matching slug
     const selectedPub = new Promise ((resolve, reject)=>{
         resolve( 
             Publication.findAll({
@@ -134,11 +250,12 @@ router.get('/stories/:id', asyncHandler(async function(req, res, next){
         );
     });
 
+    // get pub id from selectedpub...
     selectedPub.then((result)=>{
         const pubId = result[0]['id'];
         return pubId
     }).then( (result)=>{
-        //console.log(result);
+        // And use it to query for all appropriate stories
         const stories =  new Promise ((resolve, reject)=>{
             resolve(
                 Story.findAll({
@@ -148,7 +265,7 @@ router.get('/stories/:id', asyncHandler(async function(req, res, next){
                     include:{
                         model: Publication
                     },
-                    raw: true
+                    nest: true
                 })
             )
         }
@@ -161,11 +278,31 @@ router.get('/stories/:id', asyncHandler(async function(req, res, next){
 }));
 
 
+/**
+ * GET /api/users 200 - Returns the currently authenticated user
+ */
+router.get('/users', authenticateUser, asyncHandler(async (req, res)=>{
+    let userId;
+    // Look in the current user array for the current user id
+    req.currentUser.map((user)=> {
+        userId = user.id;
+    });
+
+    // Use current user ID to return current user info
+    const users = await User.findByPk(userId, {
+        attributes: ["id", "emailAddress"]
+    });
+    // Return payload for current user with 200 status
+    res.status(200).json(users);
+ }));
+
+
 
 /*********** POST  */
 
 /**
  * Add a publication
+ * @TODO: Build UI for the front end so users can add their own publications
  */
 
 router.post('/publications', (req, res, next)=>{
@@ -190,6 +327,7 @@ router.post('/publications', (req, res, next)=>{
 /**
  * Scrape for all available stories
  */
+
 router.post('/stories', asyncHandler( async function(req, res, next){
 
     const pubs = await Publication.findAll({
@@ -205,17 +343,65 @@ router.post('/stories', asyncHandler( async function(req, res, next){
 
 
 
+// Add a user
+
+
+
+router.post('/create-user', asyncHandler( async function(req, res, next){
+    
+    const userInfo = req.body;
+    
+    const userHash = bcrypt.hashSync(userInfo.password, saltRounds);
+
+try{
+    const newUser = await User.create({
+        emailAddress: userInfo.emailAddress,
+        password: userHash
+      });
+} catch(err) {
+    console.log(err);
+}
+    
+  
+    res.status(201).send();
+  }));
+
+
+
+  router.post('/user/:id/create-bookmark/', asyncHandler( async function(req, res, next){
+  
+    const bookmarkInfo = req.body;
+  
+    console.log(bookmarkInfo);
+    try{
+        const newBookmark = await Bookmark.create({
+            userId:req.params.id,
+            storyId:bookmarkInfo.storyId
+        });
+    } catch(err) {
+        console.log(err);
+    }
+     
+    res.status(201).send();
+  }));
+
+
+
+
 /************DELETE ********** */
 
 
 router.delete('/stories', asyncHandler( async function(req, res, next){
-
-    //const allStories = await Story.findAll();
-   
-    await Story.destroy({where:{}});
-    
+    await Story.destroy({where:{}});    
     res.status(204).end();
 }));
+
+
+router.post('/stories/:id', asyncHandler(async function(req, res, next){
+    console.log(req.params);
+    //set boolean to true
+}));
+
 
 
 

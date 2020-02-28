@@ -2,6 +2,7 @@ var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
+var cors = require('cors')
 var logger = require('morgan');
 const bodyParser = require('body-parser');
 
@@ -13,6 +14,7 @@ var indexRouter = require('./routes/index');
 var apiRouter = require('./routes/api');
 
 var app = express();
+app.use(cors());
 
 //set up bodyParser
 app.use(bodyParser.json());
@@ -63,13 +65,11 @@ app.use(function(err, req, res, next) {
   res.send('error');
 });
 
-// choose a port
-app.set('port', process.env.PORT || 5000);
-
+/*
 //Send message from server
 const server = app.listen(app.get('port'), ()=>{
   console.log(`Express server is listening on port ${server.address().port}`);
 });
 
-
+*/
 module.exports = app;

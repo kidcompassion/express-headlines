@@ -5,6 +5,16 @@ var cookieParser = require('cookie-parser');
 var cors = require('cors')
 var logger = require('morgan');
 const bodyParser = require('body-parser');
+const axios = require('axios');
+
+
+var CronJob = require('cron').CronJob;
+var job = new CronJob('0 0 */3 * * *', function() {
+  axios.post('http://localhost:5000/api/stories').then(()=>{
+    console.log('posted');
+  });
+}, null, true, 'America/Los_Angeles');
+job.start();
 
 //Include Sequelize
 const { sequelize } = require('./models');

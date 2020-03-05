@@ -218,6 +218,10 @@ router.get('/:id/bookmarks',asyncHandler(async function(req, res, next){
                   [Op.in]: userBookmarks
                 }
               },
+              order: [
+                ['createdAt', 'DESC']
+            ],
+           
               include:{
                 model: Publication
             }
@@ -370,17 +374,45 @@ try{
 
   router.post('/user/:id/create-bookmark/', asyncHandler( async function(req, res, next){
   
+
+    //check to see if combination exists
+    //if it does, delete it
+    // if it doesn't, add it
+
     const bookmarkInfo = req.body;
-  
-    console.log(bookmarkInfo);
-    try{
-        const newBookmark = await Bookmark.create({
+    const checkIfExists = await Bookmark.findOne({
+        where:{
             userId:req.params.id,
             storyId:bookmarkInfo.storyId
-        });
-    } catch(err) {
-        console.log(err);
-    }
+        }
+        
+    }).then((response)=>{
+        if(response === null){
+            try{
+                console.log('bookmarked');
+                Bookmark.create({
+                    userId:req.params.id,
+                    storyId:bookmarkInfo.storyId
+                });
+            } catch(err) {
+                console.log(err);
+            }
+        } else{
+            console.log('bookmark exists');
+            Bookmark.destroy({
+                where:{
+                    userId:req.params.id,
+                    storyId:bookmarkInfo.storyId
+                }
+            });
+        }
+    });
+
+
+    
+  
+   // console.log(bookmarkInfo);
+   
      
     res.status(201).send();
   }));

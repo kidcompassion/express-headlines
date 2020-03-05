@@ -24,3 +24,6 @@
         "logoUrl":"https://via.placeholder.com/150"
     }
 ]
+
+
+// on load, check if current user id and current story id exist in bookmarks table. if they do, add class.

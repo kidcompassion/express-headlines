@@ -171,11 +171,21 @@ router.get('/publications', asyncHandler(async function(req, res, next) {
 
 
 
+
 /**
  *  Get all stories, in reverse chronological order
  */
-router.get('/stories', asyncHandler(async function(req, res, next) {
+router.get('/stories/:page', asyncHandler(async function(req, res, next) {
+    // Count all the stories
     
+    
+    const totalStories = await Story.count();
+    
+
+     const page = req.params.page;
+     const pageSize = 10;
+     const offset = page * pageSize;
+     const limit = pageSize;
     const stories = await Story.findAll({
         attributes: ["id", "title", "url", "publicationDate", "excerpt", "author", "content", "imgUrl", "publicationId"],
         order: [
@@ -184,9 +194,36 @@ router.get('/stories', asyncHandler(async function(req, res, next) {
         include:{
             model: Publication
         },
-    });
-    res.status(200).json(stories);
+        limit,
+        offset
+    })
+    .then((stories) => {
+        console.log(stories.length);
+        res.status(200).json({'totalStories': totalStories, 'allStories': stories})
+    })
+    .catch((error) => {
+        console.log(error);
+        res.status(400).send(error);
+    })
+
+
+
+   // res.status(200).json(stories);
 }));
+
+
+
+
+
+/**
+ *  Get pagination for publication stories
+ */
+router.get('/:publication/page-count/', asyncHandler(async function(req, res, next) {
+    const countAllStories = await Story.count();
+    res.status(200).json(Math.ceil(countAllStories/10));
+}));
+
+
 
 
 /**
@@ -238,7 +275,14 @@ router.get('/:id/bookmarks',asyncHandler(async function(req, res, next){
 /**
  * Get stories by publication slug
  */
-router.get('/stories/:id', asyncHandler(async function(req, res, next){
+router.get('/stories/by-publication/:id/:page', asyncHandler(async function(req, res, next){
+
+
+    const page = req.params.page;
+    const pageSize = 10;
+    const offset = page * pageSize;
+    const limit = pageSize;
+
     // Grab publication slug
     const publicationSlug = req.params.id;
 
@@ -262,14 +306,16 @@ router.get('/stories/:id', asyncHandler(async function(req, res, next){
         // And use it to query for all appropriate stories
         const stories =  new Promise ((resolve, reject)=>{
             resolve(
-                Story.findAll({
+                Story.findAndCountAll({
                     where: {
                         publicationId: result
                     },
                     include:{
                         model: Publication
                     },
-                    nest: true
+                    nest: true,
+                    limit,
+                    offset
                 })
             )
         }

@@ -226,12 +226,14 @@ router.get('/:publication/page-count/', asyncHandler(async function(req, res, ne
 
 
 
+
 /**
  * List bookmarks for a given user based on their user id #
  */
 
-router.get('/:id/bookmarks',asyncHandler(async function(req, res, next){
+router.get('/:id/bookmarks/',asyncHandler(async function(req, res, next){
     try{
+
         // Get userId via URL, and get all their bookmarks
         const bookmarks = await Bookmark.findAll({
             where: {
@@ -261,7 +263,60 @@ router.get('/:id/bookmarks',asyncHandler(async function(req, res, next){
            
               include:{
                 model: Publication
-            }
+            },
+        });
+
+        res.status(200).json(bookmarkedStories);
+
+    }catch(err){
+        console.log(err);
+    }
+}));
+
+
+/**
+ * List bookmarks for a given user based on their user id #
+ */
+
+router.get('/:id/bookmarks/:page',asyncHandler(async function(req, res, next){
+    try{
+
+     const page = req.params.page;
+     const pageSize = 10;
+     const offset = page * pageSize;
+     const limit = pageSize;
+        // Get userId via URL, and get all their bookmarks
+        const bookmarks = await Bookmark.findAll({
+            where: {
+                userId: {
+                    [Op.eq]: req.params.id
+                }
+            },
+            raw:true
+        });
+
+        // Push the storyIDs into an array
+        let userBookmarks = [];
+        bookmarks.map((story, index)=>{
+            userBookmarks.push(story.storyId);
+        });
+
+        // Query for all storyids in the array
+        const bookmarkedStories = await Story.findAndCountAll({
+            where: {
+                id: {
+                  [Op.in]: userBookmarks
+                }
+              },
+              order: [
+                ['createdAt', 'DESC']
+            ],
+           
+              include:{
+                model: Publication
+            },
+            limit,
+            offset
         });
 
         res.status(200).json(bookmarkedStories);
@@ -300,6 +355,7 @@ router.get('/stories/by-publication/:id/:page', asyncHandler(async function(req,
 
     // get pub id from selectedpub...
     selectedPub.then((result)=>{
+        console.log('test', result);
         const pubId = result[0]['id'];
         return pubId
     }).then( (result)=>{
@@ -310,6 +366,10 @@ router.get('/stories/by-publication/:id/:page', asyncHandler(async function(req,
                     where: {
                         publicationId: result
                     },
+                    attributes: ["id", "title", "url", "publicationDate", "excerpt", "author", "content", "imgUrl", "publicationId"],
+                    order: [
+                        ['publicationDate', 'DESC']
+                    ],
                     include:{
                         model: Publication
                     },
@@ -434,6 +494,7 @@ try{
         
     }).then((response)=>{
         if(response === null){
+            console.log('is null', response);
             try{
                 console.log('bookmarked');
                 Bookmark.create({

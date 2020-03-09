@@ -98,7 +98,7 @@ const authenticateUser = async (req, res, next) => {
 
 const xmlParse = (linkInfo, pubId)=>{
     let allStories = [];
-
+    const errors = [];
     // Get the results of the rss-parser
     let feed =  new Promise ((resolve, reject)=>{
         resolve( parser.parseURL(linkInfo));
@@ -129,7 +129,7 @@ const xmlParse = (linkInfo, pubId)=>{
                 imgUrl:formattedImg,
                 excerpt: item.contentSnippet,
                 publicationId: pubId, // The corresponding publication, so we can sort by pub
-                categoryId: 123, //TODO: set up the cats
+                categoryId: null, //TODO: set up the cats
                 content: item.content
             }
 
@@ -137,12 +137,16 @@ const xmlParse = (linkInfo, pubId)=>{
             allStories.push(story);
          });
     }).then(()=>{
+        
         allStories.map((story)=>{
-            Story.create(story);
+            Story.create(story).catch((err)=>{
+                errors.push(err);
+                
+            });
         });
-    }).catch((err)=>{
-        console.log(err.response);
-    });
+
+        console.log(errors);
+    })
 
     // NEEDS TO TRIGGER RE_RENDER OF COMPONENT
 }
@@ -182,7 +186,7 @@ router.get('/stories/:page', asyncHandler(async function(req, res, next) {
     const totalStories = await Story.count();
     
 
-     const page = req.params.page;
+     const page = req.params.page-1;
      const pageSize = 10;
      const offset = page * pageSize;
      const limit = pageSize;
@@ -216,11 +220,16 @@ router.get('/stories/:page', asyncHandler(async function(req, res, next) {
 
 
 /**
- *  Get pagination for publication stories
+ *  Get most recent update info
  */
-router.get('/:publication/page-count/', asyncHandler(async function(req, res, next) {
-    const countAllStories = await Story.count();
-    res.status(200).json(Math.ceil(countAllStories/10));
+router.get('/last-update', asyncHandler(async function(req, res, next) {
+    const latestUpdate = await Story.findAll({
+        attributes:['updatedAt'],
+        order:[['updatedAt', 'DESC']],
+        limit:1,
+        raw:true
+    });
+    res.status(200).json(latestUpdate);
 }));
 
 
@@ -281,7 +290,7 @@ router.get('/:id/bookmarks/',asyncHandler(async function(req, res, next){
 router.get('/:id/bookmarks/:page',asyncHandler(async function(req, res, next){
     try{
 
-     const page = req.params.page;
+     const page = req.params.page-1;
      const pageSize = 10;
      const offset = page * pageSize;
      const limit = pageSize;
@@ -333,7 +342,7 @@ router.get('/:id/bookmarks/:page',asyncHandler(async function(req, res, next){
 router.get('/stories/by-publication/:id/:page', asyncHandler(async function(req, res, next){
 
 
-    const page = req.params.page;
+    const page = req.params.page-1;
     const pageSize = 10;
     const offset = page * pageSize;
     const limit = pageSize;
@@ -446,9 +455,17 @@ router.post('/stories', asyncHandler( async function(req, res, next){
     });
     pubs.map((pub, index)=>{
          xmlParse(pub.rssUrl, pub.id);
-    });
-   
-    res.status(201).send();
+    }).then((response)=>{
+        res.status(201).send(response);
+    }).catch((error) => {
+        console.log(error);
+        res.status(400).send(error);
+    })
+
+   /**
+    * Requires better error handling
+    */
+    
 }));
 
 
@@ -458,12 +475,13 @@ router.post('/stories', asyncHandler( async function(req, res, next){
 
 
 router.post('/create-user', asyncHandler( async function(req, res, next){
-    
+    console.log(req.body);
     const userInfo = req.body;
     
     const userHash = bcrypt.hashSync(userInfo.password, saltRounds);
-
+console.log(userHash);
 try{
+    console.log('try');
     const newUser = await User.create({
         emailAddress: userInfo.emailAddress,
         password: userHash
@@ -534,6 +552,12 @@ router.delete('/stories', asyncHandler( async function(req, res, next){
     await Story.destroy({where:{}});    
     res.status(204).end();
 }));
+
+router.delete('/bookmarks', asyncHandler( async function(req, res, next){
+    await Bookmark.destroy({where:{}});    
+    res.status(204).end();
+}));
+
 
 
 router.post('/stories/:id', asyncHandler(async function(req, res, next){

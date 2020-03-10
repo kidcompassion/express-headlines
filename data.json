@@ -26,4 +26,51 @@
 ]
 
 
+
+
+/*
+
+{
+  "development": {
+    "username" : "root",
+    "password" : "root",
+    "database" : "headlines-fs",
+    "dialect": "mysql",
+    "port": 8889,
+    "socketPath": "/Applications/MAMP/tmp/mysql/mysql.sock"
+  },
+  "test": {
+    "username" : "d7otuwmewnaf9gaw",
+    "password" : "iaurew4gr0zfw01b",
+    "host" : "bqmayq5x95g1sgr9.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
+    "port" : 3306,
+    "database" : "y1438ghwhgtvsmrl",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username" : "d7otuwmewnaf9gaw",
+    "password" : "iaurew4gr0zfw01b",
+    "host" : "bqmayq5x95g1sgr9.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
+    "port" : 3306,
+    "database" : "y1438ghwhgtvsmrlg",
+    "dialect": "mysql"
+  }
+}
+*/
 // on load, check if current user id and current story id exist in bookmarks table. if they do, add class.
+
+
+{
+    "development": {
+      "dialect": "sqlite",
+      "storage": "headlines-restapi.db"
+    },
+    "test": {
+      "dialect": "sqlite",
+      "storage": "headlines-restapi.db"
+    },
+    "production": {
+      "dialect": "sqlite",
+      "storage": "headlines-restapi.db"
+    }
+  }

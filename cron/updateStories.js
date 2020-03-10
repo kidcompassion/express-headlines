@@ -4,7 +4,7 @@ const updateStories = async ()=>{
     const url = 'https://headlines-fe.herokuapp.com/api/stories'
 
     try{
-        await axios.post( url, { method: 'POST'}).then(()=>{
+        await axios.post( url ).then(()=>{
             console.log('posted');
         });
     }catch(err){

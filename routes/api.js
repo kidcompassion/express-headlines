@@ -424,7 +424,7 @@ router.get('/users', authenticateUser, asyncHandler(async (req, res)=>{
  * @TODO: Build UI for the front end so users can add their own publications
  */
 
-router.post('/publications', (req, res, next)=>{
+router.post('/publications', authenticateUser, (req, res, next)=>{
     newPub = req.body;
 
     const generateSlug = (name)=>{
@@ -447,7 +447,7 @@ router.post('/publications', (req, res, next)=>{
  * Scrape for all available stories
  */
 
-router.post('/stories', asyncHandler( async function(req, res, next){
+router.post('/stories', authenticateUser, asyncHandler( async function(req, res, next){
 
     const pubs = await Publication.findAll({
         raw: true,
@@ -496,7 +496,7 @@ try{
 
 
 
-  router.post('/user/:id/create-bookmark/', asyncHandler( async function(req, res, next){
+  router.post('/user/:id/create-bookmark/', authenticateUser, asyncHandler( async function(req, res, next){
   
 
     //check to see if combination exists
@@ -548,19 +548,19 @@ try{
 /************DELETE ********** */
 
 
-router.delete('/stories', asyncHandler( async function(req, res, next){
+router.delete('/stories', authenticateUser, asyncHandler( async function(req, res, next){
     await Story.destroy({where:{}});    
     res.status(204).end();
 }));
 
-router.delete('/bookmarks', asyncHandler( async function(req, res, next){
+router.delete('/bookmarks', authenticateUser, asyncHandler( async function(req, res, next){
     await Bookmark.destroy({where:{}});    
     res.status(204).end();
 }));
 
 
 
-router.post('/stories/:id', asyncHandler(async function(req, res, next){
+router.post('/stories/:id', authenticateUser, asyncHandler(async function(req, res, next){
     console.log(req.params);
     //set boolean to true
 }));

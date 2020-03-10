@@ -1,4 +1,4 @@
-const purgeStories = async =>{
+const purgeStories = ()=>{
     Promise.all([
         fetch('https://headlines-fe.herokuapp.com/api/stories', {method: 'delete'}),
         fetch('https://headlines-fe.herokuapp.com/api/bookmarks', {method: 'delete'})

@@ -1,11 +1,15 @@
+const axios = require('axios');
 const purgeStories = ()=>{
-    Promise.all([
-        fetch('https://headlines-fe.herokuapp.com/api/stories', {method: 'delete'}),
-        fetch('https://headlines-fe.herokuapp.com/api/bookmarks', {method: 'delete'})
-        
-    ]).then(()=>{
-        console.log('Purged');
-    })
+    try{
+        Promise.all([
+            axios.delete('https://headlines-fe.herokuapp.com/api/stories'),
+            axios.delete('https://headlines-fe.herokuapp.com/api/bookmarks'),
+        ]).then(()=>{
+            console.log('Purged');
+        })
+    }catch(err){
+        console.log(err);
+    }
 }
 
 purgeStories();

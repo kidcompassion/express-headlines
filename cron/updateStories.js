@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const updateStories = async ()=>{
 
-    const url = 'https://headlines-fe.herokuapp.com/api/stories'
+    const url = 'https://headlines-fe.herokuapp.com/api/retrieve-stories'
 
     try{
         await axios.get( url).then(()=>{

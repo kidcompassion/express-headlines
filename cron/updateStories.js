@@ -8,10 +8,11 @@ const updateStories = async ()=>{
             "Access-Control-Allow-Origin": "*",
         }
       };
+
     const url = 'https://headlines-fe.herokuapp.com/api/stories'
 
     try{
-        await axios.post( url, axiosConfig).then(()=>{
+        await axios.post( url, {},axiosConfig).then(()=>{
             console.log('posted');
         });
     }catch(err){

@@ -9,7 +9,7 @@ const updateStories = async ()=>{
     const url = 'https://headlines-fe.herokuapp.com/api/stories'
     
     try{
-        await axios.post(url, { user, headers: {"Authorization" : `Basic ${user}`} });
+        await axios.post(url, { user, headers: {"Authorization" : `Basic`} });
     }catch(err){
         console.log(err);
     }

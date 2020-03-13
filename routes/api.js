@@ -447,7 +447,7 @@ router.post('/publications', authenticateUser, (req, res, next)=>{
  * Scrape for all available stories
  */
 
-router.post('/stories', authenticateUser, asyncHandler( async function(req, res, next){
+router.post('/stories', asyncHandler( async function(req, res, next){
 
     const pubs = await Publication.findAll({
         raw: true,
@@ -460,7 +460,9 @@ router.post('/stories', authenticateUser, asyncHandler( async function(req, res,
     }).catch((error) => {
         console.log(error);
         res.status(400).send(error);
-    })
+    });
+
+    console.log('test');
 
    /**
     * Requires better error handling

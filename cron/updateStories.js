@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const updateStories = async ()=>{
 
-    const url = 'https://headlines-fe.herokuapp.com/api/stories'
+    const url = 'https://express-headlines-api.herokuapp.com/api/stories'
 
     try{
         await axios.post( url).then(()=>{

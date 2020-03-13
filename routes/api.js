@@ -460,9 +460,7 @@ router.post('/stories', asyncHandler( async function(req, res, next){
     }).catch((error) => {
         console.log(error);
         res.status(400).send(error);
-    });
-
-    console.log('test');
+    })
 
    /**
     * Requires better error handling

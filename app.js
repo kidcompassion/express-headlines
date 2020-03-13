@@ -19,6 +19,8 @@ job.start();
 //Include Sequelize
 const { sequelize } = require('./models');
 
+
+
 // Set up api routes
 var indexRouter = require('./routes/index');
 var apiRouter = require('./routes/api');

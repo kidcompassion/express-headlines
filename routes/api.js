@@ -448,19 +448,20 @@ router.post('/publications', authenticateUser, (req, res, next)=>{
  */
 
 router.post('/stories', asyncHandler( async function(req, res, next){
-
-    const pubs = await Publication.findAll({
-        raw: true,
-        attributes: ["id", "rssUrl"],
-    });
-    pubs.map((pub, index)=>{
-         xmlParse(pub.rssUrl, pub.id);
-    }).then((response)=>{
-        res.status(201).send(response);
-    }).catch((error) => {
+   try{
+        const pubs = await Publication.findAll({
+            raw: true,
+            attributes: ["id", "rssUrl"],
+        });
+        pubs.map((pub, index)=>{
+            xmlParse(pub.rssUrl, pub.id);
+        });
+        res.status(201).send();
+    
+   }catch(error){
         console.log(error);
         res.status(400).send(error);
-    })
+    };
 
    /**
     * Requires better error handling

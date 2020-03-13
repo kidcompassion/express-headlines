@@ -4,7 +4,10 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+cron/config.js
+config/
 
+headlines-restapi.db
 # Runtime data
 pids
 *.pid

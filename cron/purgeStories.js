@@ -1,9 +1,10 @@
 const axios = require('axios');
+const config = require('/config.js');
 const purgeStories = ()=>{
     try{
         Promise.all([
-            axios.delete('https://headlines-fe.herokuapp.com/api/stories'),
-            axios.delete('https://headlines-fe.herokuapp.com/api/bookmarks'),
+            axios.delete(`${config.storiesUrl}`),
+            axios.delete(`${config.bookmarks.Url}`),
         ]).then(()=>{
             console.log('Purged');
         })
